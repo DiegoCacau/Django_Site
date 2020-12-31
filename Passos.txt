@@ -1,0 +1,183 @@
+# Configurações iniciais
+
+1- criar virtualenv (vou falar sobre isso?)
+
+2- `pip install django`
+
+3- `django-admin startproject meusite`
+
+4- checar se está tudo certo `python manage.py runserver`
+
+5- criar tabela no mysql
+
+6- `pip install python-decouple`
+
+7- criar aquivo `.env` na pasta`meusite`.
+
+```
+# This file is just an example.
+# To run the project locally you'll need to create a .env file defining all 
+# variables present here with your environment values.
+# Note: if not using Sentry just leave it with any value.
+
+# Database
+DB_NAME=django_site
+DB_USER=dcc
+DB_PASSWORD=0130
+SECRET_KEY=gm6u7x146rxu86mbhnr*7(yhlc8jtgpz$hh8b3svr8d&r7zf@7
+```
+
+8- editar arquivo settings.py
+
+	- adicionar `from decouple import config`
+	- trocar a linha da `SECRET_KEY por` `SECRET_KEY = config('SECRET_KEY')`
+	- editar o `ALLOWED_HOSTS`, trocar por:
+	```
+	ALLOWED_HOSTS = [
+		'127.0.0.1',
+		'localhost'
+	]
+	```
+	- trocar o conteúdo de DATABASES["default"]  por:
+	```
+		'ENGINE': 'django.db.backends.mysql',
+	    'NAME': config('DB_NAME'),
+	    'USER': config('DB_USER'),
+	    'PASSWORD': config('DB_PASSWORD'),
+	    'HOST': 'localhost',
+	    'PORT': '3306',
+    ```
+    - trocar `LANGUAGE_CODE` para `pt-br`
+    - trocar `TIME_ZONE` para `America/Sao_Paulo`
+    - tentar rodar. Se der `Did you install mysqlclient?`, instalar: `pip install mysqlclient`
+    - rodar as migrações do projeto `python manage.py migrate`
+    - Projeto funcionando (OK)
+
+9- criar aplicação `python manage.py startapp site_generico`
+
+10- editar arquivo settings.py. 
+
+	- Adicionar `'site_generico',` dentro de `INSTALLED_APPS`
+	- Trocar `from pathlib import Path` por `import os`
+	- Trocar `BASE_DIR = Path(__file__).resolve().parent.parent` por `PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))`
+	- Em `TEMPLATES`, adicionar `os.path.join(PROJECT_DIR, 'templates')` em `DIRS`
+	- Adicione ao final do arquivo:
+	```
+		STATICFILES_DIRS = (
+		  os.path.join(PROJECT_DIR, 'assets'),
+		)
+		MEDIA_URL = '/images/'
+		MEDIA_ROOT = os.path.join(PROJECT_DIR, 'assets/images/')
+	```
+
+11- No arquivo `site_generico/views.py`
+	- Adicione `from django.views import View`
+	- Adicione:
+	```
+	class HomeView(View):
+		def get(self, request):	
+			return render(request, 'index.html')
+	```
+
+12- Dentro de `site_generico` crie um arquivo `urls.py`
+
+13- Em `urls.py` adicione:
+	```
+	from django.urls import re_path
+	from .views import *
+	urlpatterns = [
+	    re_path(r'^$', HomeView.as_view(), name='index'),
+	]
+	```
+
+14- Em `meusite/urls.py`:
+	- troque `from django.urls import path` por `from django.urls import re_path, include`
+	- adicione:
+		```
+		from django.conf.urls.static import static
+		from django.conf import settings
+		```
+	- troque `path('admin/', admin.site.urls),` por `re_path(r'^admin/',  admin.site.urls),`
+	- abaixo de `re_path(r'^admin/',  admin.site.urls),` adicione `re_path(r'', include('site_generico.urls')),`
+	- no final do `urlpatterns` adicione ` + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)`
+
+15- Crie uma pasta `templates` no diretorio principal do projeto, `meusite`
+
+16- crie um arquivo `index.html` dentro de `templates`, com o conteúdo `Olá, mundo!`
+
+17- Rode o projeto e vá até `http://127.0.0.1:8000/`
+
+
+---------------------------------------- Fim da primeira parte -----------------------------------------------------------------
+
+
+# Criando Models
+
+1- Definir qual o objetivo do site. Nesse caso, construiremos uma loja de camisas.
+
+2- Adicionar dados no `site_generico/models.py`
+
+3- Adicionar dados no `site_generico/admin.py`
+
+4- rodar `python manage.py makemigrations`
+
+5- rodar `python manage.py migrate`
+
+6- criar um superuser `python manage.py createsuperuser`
+
+7- ir em `http://127.0.0.1:8000/admin/`, fazer login com o usuário criado e verificar que todas as tabelas estão criadas
+
+8- salvar alguns dados
+
+Obs: Como vai ser necessário explicar os detalhes das classes e como usá-los, essa parte vai ser menor
+
+
+
+---------------------------------------- Fim da segunda parte -----------------------------------------------------------------
+
+
+# Adaptando um template
+
+
+1- Escolher um template (ou fazer um). Nesse caso, vamos usar um template pronto (e grátis), disponível em https://www.free-css.com/free-css-templates/page236/dailyshop
+
+2- Vamos começar olhando as páginas do template. Notamos que o início e o final das páginas se repete, então vamos usar ambos e criar o template base. Nesse caso, não vamos deixar o Slider no template base e nem usar algum recurso mais avançado, vamos deixá-lo nas páginas filhas, mesmo não sendo a forma mais efetiva de se fazer.
+
+3- Criar um arquivo `base.html` dentro de `templates` e copiar todo o conteúdo do `index.html` para o `base.html` que acabamos de criar
+
+4- Remover o conteúdo do centro do arquivo
+
+5- Adicionar:
+`{% load static %}`
+`{% block title %}`
+`{% block extra_css %}`
+`{% block content %}`
+`{% block extra_js %}`
+
+6- Adicionar `{% static '' %}` no path de imgs, js e css
+
+7- Altere o arquivo `index.html`, dentro de `templates` para:
+
+```
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block content %}
+<span>olá mundo</span>
+
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}
+``` 
+
+6- Crie uma pasta `assets` na raiz do projeto
+
+7- Copie as pastas `img`, `css`, `js` e `fonts` do template para a pasta `assets` recém criada
+
+8- Rode o projeto e teste. Você deverá ver o o menú e o footer com a frase `olá mundo` entre eles.
+
+9- Agora que a base está pronta, vamos editar o restante do nossa página inicial
